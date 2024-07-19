@@ -1,14 +1,15 @@
 # coding: utf8
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from .page_load import PageLoad
+from .page_query import PageQuery
 from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
+from lib.global_config import table_name
 
 
 def get_default_db_path() -> str:
@@ -25,8 +26,7 @@ def get_default_db_path() -> str:
     if not app_dir.exists():
         app_dir.mkdir(parents=True, exist_ok=True)
 
-    now_s = datetime.now().strftime("%Y%m%d%H%M%S")
-    return str(app_dir / f"{now_s}.db")
+    return str(app_dir / f"default.db")
 
 
 class UiKpsUnifier(object):
@@ -63,11 +63,12 @@ class UiKpsUnifier(object):
 
         self.page_load = PageLoad(sqh, self.cw)
         self.sw_m.addWidget(self.page_load)
-        self.page_query = QtWidgets.QWidget(self.cw)
+        self.page_query = PageQuery(sqh, self.cw)
         self.sw_m.addWidget(self.page_query)
 
     def update_sqh(self, sqh: Sqlite3Worker):
         self.page_load.update_sqh(sqh)
+        self.page_query.update_sqh(sqh)
 
 
 class KpsUnifier(QtWidgets.QMainWindow):
@@ -88,7 +89,7 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def init_db(self) -> Sqlite3Worker:
         sqh = Sqlite3Worker(self.db_path)
-        sqh.create_table("entries", all_columns, if_not_exists=True)
+        sqh.create_table(table_name, all_columns, if_not_exists=True)
         return sqh
 
     def update_db(self, filename: str):

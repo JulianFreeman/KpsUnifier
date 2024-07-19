@@ -11,6 +11,7 @@ columns_d = {
     "notes": Column("notes", DataType.BLOB),
     "path": Column("path", DataType.BLOB, nullable=False),
 }
+
 all_columns = [
     columns_d["entry_id"],
     columns_d["title"],
@@ -20,4 +21,11 @@ all_columns = [
     columns_d["url"],
     columns_d["notes"],
     columns_d["path"],
+]
+
+query_columns = [
+    columns_d["entry_id"],
+    columns_d["title"],
+    columns_d["username"],
+    columns_d["url"],
 ]
