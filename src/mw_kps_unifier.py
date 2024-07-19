@@ -1,7 +1,4 @@
 # coding: utf8
-import os
-import sys
-from pathlib import Path
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from .page_load import PageLoad
@@ -9,28 +6,11 @@ from .page_query import PageQuery
 from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
-from lib.global_config import table_name
-
-
-def get_default_db_path() -> str:
-    plat = sys.platform
-    if plat == "win32":
-        data_dir = os.path.expandvars("%appdata%")
-    elif plat == "darwin":
-        data_dir = os.path.expanduser("~/Library/Application Support")
-    else:
-        raise OSError("Unsupported platform")
-    app_dir = Path(data_dir,
-                   QtWidgets.QApplication.organizationName(),
-                   QtWidgets.QApplication.applicationName())
-    if not app_dir.exists():
-        app_dir.mkdir(parents=True, exist_ok=True)
-
-    return str(app_dir / f"default.db")
+from lib.config_utils import write_config
 
 
 class UiKpsUnifier(object):
-    def __init__(self, default_db_path: str, sqh: Sqlite3Worker, window: QtWidgets.QMainWindow):
+    def __init__(self, default_db_path: str, config: dict, sqh: Sqlite3Worker, window: QtWidgets.QMainWindow):
         window.setWindowTitle('KeePassXC 多合一')
         self.cw = QtWidgets.QWidget(window)
         self.vly_m = QtWidgets.QVBoxLayout()
@@ -61,9 +41,9 @@ class UiKpsUnifier(object):
         self.sw_m = QtWidgets.QStackedWidget(self.cw)
         self.vly_m.addWidget(self.sw_m)
 
-        self.page_load = PageLoad(sqh, self.cw)
+        self.page_load = PageLoad(sqh, config, self.cw)
         self.sw_m.addWidget(self.page_load)
-        self.page_query = PageQuery(sqh, self.cw)
+        self.page_query = PageQuery(sqh, config, self.cw)
         self.sw_m.addWidget(self.page_query)
 
     def update_sqh(self, sqh: Sqlite3Worker):
@@ -72,24 +52,31 @@ class UiKpsUnifier(object):
 
 
 class KpsUnifier(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, db_path: str, config: dict, parent=None):
         super().__init__(parent)
-        self.db_path = get_default_db_path()
+        self.db_path = db_path
+        self.config = config
         self.sqh = self.init_db()
 
-        self.ui = UiKpsUnifier(self.db_path, self.sqh, self)
+        self.ui = UiKpsUnifier(self.db_path, self.config, self.sqh, self)
 
         self.ui.act_new.triggered.connect(self.on_act_new_triggered)
         self.ui.act_open.triggered.connect(self.on_act_open_triggered)
         self.ui.act_load.triggered.connect(self.on_act_load_triggered)
         self.ui.act_query.triggered.connect(self.on_act_query_triggered)
 
+    def __del__(self):
+        self.config["last_db_path"] = self.db_path
+        write_config(self.config,
+                     QtWidgets.QApplication.organizationName(),
+                     QtWidgets.QApplication.applicationName())
+
     def sizeHint(self):
         return QtCore.QSize(860, 640)
 
     def init_db(self) -> Sqlite3Worker:
         sqh = Sqlite3Worker(self.db_path)
-        sqh.create_table(table_name, all_columns, if_not_exists=True)
+        sqh.create_table(self.config["table_name"], all_columns, if_not_exists=True)
         return sqh
 
     def update_db(self, filename: str):

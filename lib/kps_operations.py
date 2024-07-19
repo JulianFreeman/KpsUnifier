@@ -1,8 +1,8 @@
 # coding: utf8
 from os import PathLike
 from pykeepass import PyKeePass
-from .Sqlite3Helper import Sqlite3Worker, BlobType, Column
-from .global_config import table_name
+from lib.db_columns_def import all_columns
+from .Sqlite3Helper import Sqlite3Worker, BlobType
 
 
 def trim_str(value):
@@ -28,7 +28,7 @@ def blob_fy(value: str) -> BlobType:
 
 
 def read_kps_to_db(kps_file: str | PathLike[str], password: str,
-                   columns: list[Column], sqh: Sqlite3Worker) -> PyKeePass:
+                   table_name: str, sqh: Sqlite3Worker) -> PyKeePass:
     kp = PyKeePass(kps_file, password=password)
 
     values = []
@@ -44,5 +44,5 @@ def read_kps_to_db(kps_file: str | PathLike[str], password: str,
                 blob_fy("::".join([kps_file] + entry.path[:-1])),
             ])
 
-    sqh.insert_into(table_name, columns, values)
+    sqh.insert_into(table_name, all_columns[1:], values)
     return kp

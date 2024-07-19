@@ -1,10 +1,9 @@
 # coding: utf8
 import json
 
-from PySide6 import QtWidgets, QtCore, QtGui
-from lib.Sqlite3Helper import Sqlite3Worker, Operand, Expression
+from PySide6 import QtWidgets, QtCore
+from lib.Sqlite3Helper import Sqlite3Worker, Expression
 from lib.db_columns_def import query_columns
-from lib.global_config import button_min_width, table_name
 
 
 class QueryTableModel(QtCore.QAbstractTableModel):
@@ -34,9 +33,10 @@ class QueryTableModel(QtCore.QAbstractTableModel):
 
 
 class PageQuery(QtWidgets.QWidget):
-    def __init__(self, sqh: Sqlite3Worker, parent=None):
+    def __init__(self, sqh: Sqlite3Worker, config: dict, parent=None):
         super().__init__(parent)
         self.sqh = sqh
+        self.config = config
 
         self.hly_m = QtWidgets.QHBoxLayout()
         self.setLayout(self.hly_m)
@@ -53,13 +53,13 @@ class PageQuery(QtWidgets.QWidget):
         self.sa_left.setWidget(self.sa_wg)
 
         self.pbn_all = QtWidgets.QPushButton("全部", self.sa_wg)
-        self.pbn_all.setMinimumWidth(button_min_width)
+        self.pbn_all.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_all)
 
         self.vly_sa_wg.addStretch(1)
 
         self.pbn_read_filters = QtWidgets.QPushButton("更多过滤", self)
-        self.pbn_read_filters.setMinimumWidth(button_min_width)
+        self.pbn_read_filters.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_read_filters)
 
         self.trv_m = QtWidgets.QTreeView(self)
@@ -91,7 +91,7 @@ class PageQuery(QtWidgets.QWidget):
 
     def set_filter_button(self, fil: dict):
         pbn_fil = PushButtonWithData(fil, self.sa_wg, fil["name"])
-        pbn_fil.setMinimumWidth(button_min_width)
+        pbn_fil.setMinimumWidth(self.config["button_min_width"])
         self.vly_sa_wg.insertWidget(self.vly_sa_wg.count() - 2, pbn_fil)
         pbn_fil.clicked_with_data.connect(self.on_custom_filters_clicked_with_data)
 
@@ -107,7 +107,8 @@ class PageQuery(QtWidgets.QWidget):
             self.set_filter_button(fil)
 
     def on_custom_filters_clicked_with_data(self, data: dict):
-        _, results = self.sqh.select(table_name, query_columns, where=Expression(data["where"]))
+        _, results = self.sqh.select(self.config["table_name"], query_columns,
+                                     where=Expression(data["where"]))
         model = QueryTableModel(results, self)
         self.trv_m.setModel(model)
 
@@ -115,7 +116,7 @@ class PageQuery(QtWidgets.QWidget):
         self.sqh = sqh
 
     def on_pbn_all_clicked(self):
-        _, results = self.sqh.select(table_name, query_columns)
+        _, results = self.sqh.select(self.config["table_name"], query_columns)
         model = QueryTableModel(results, self)
         self.trv_m.setModel(model)
 

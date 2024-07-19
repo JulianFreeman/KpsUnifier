@@ -4,15 +4,14 @@ from pykeepass.exceptions import CredentialsError
 
 from .gbx_kps_login import GbxKpsLogin
 from lib.Sqlite3Helper import Sqlite3Worker
-from lib.db_columns_def import all_columns
 from lib.kps_operations import read_kps_to_db
-from lib.global_config import button_min_width
 
 
 class WgLoadKps(QtWidgets.QWidget):
-    def __init__(self, sqh: Sqlite3Worker, parent=None):
+    def __init__(self, sqh: Sqlite3Worker, config: dict, parent=None):
         super().__init__(parent)
         self.sqh = sqh
+        self.config = config
         self.kps_wgs: list[GbxKpsLogin] = []
 
         self.vly_m = QtWidgets.QVBoxLayout()
@@ -36,7 +35,7 @@ class WgLoadKps(QtWidgets.QWidget):
         try:
             read_kps_to_db(kps_file=item.lne_path.text(),
                            password=item.lne_password.text(),
-                           columns=all_columns[1:],
+                           table_name=self.config["table_name"],
                            sqh=self.sqh)
         except CredentialsError:
             QtWidgets.QMessageBox.critical(self, "密码错误",
@@ -52,7 +51,7 @@ class WgLoadKps(QtWidgets.QWidget):
 
 
 class PageLoad(QtWidgets.QWidget):
-    def __init__(self, sqh: Sqlite3Worker, parent=None):
+    def __init__(self, sqh: Sqlite3Worker, config: dict, parent=None):
         super().__init__(parent)
         self.hly_m = QtWidgets.QHBoxLayout()
         self.setLayout(self.hly_m)
@@ -60,10 +59,10 @@ class PageLoad(QtWidgets.QWidget):
         self.hly_m.addLayout(self.vly_left)
 
         self.pbn_add = QtWidgets.QPushButton("添加", self)
-        self.pbn_add.setMinimumWidth(button_min_width)
+        self.pbn_add.setMinimumWidth(config["button_min_width"])
         self.vly_left.addWidget(self.pbn_add)
         self.pbn_load_all = QtWidgets.QPushButton("加载全部", self)
-        self.pbn_load_all.setMinimumWidth(button_min_width)
+        self.pbn_load_all.setMinimumWidth(config["button_min_width"])
         self.pbn_load_all.setDisabled(True)
         self.vly_left.addWidget(self.pbn_load_all)
         self.vly_left.addStretch(1)
@@ -71,7 +70,7 @@ class PageLoad(QtWidgets.QWidget):
         self.sa_m = QtWidgets.QScrollArea(self)
         self.sa_m.setWidgetResizable(True)
         self.hly_m.addWidget(self.sa_m)
-        self.wg_sa = WgLoadKps(sqh, self.sa_m)
+        self.wg_sa = WgLoadKps(sqh, config, self.sa_m)
         self.sa_m.setWidget(self.wg_sa)
 
         self.pbn_add.clicked.connect(self.on_pbn_add_clicked)
