@@ -39,3 +39,5 @@ sim_columns = [
     columns_d["uuid"],
     columns_d["filepath"],
 ]
+
+filepath_col = columns_d["filepath"]

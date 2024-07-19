@@ -4,8 +4,11 @@ from uuid import UUID
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QAbstractTableModel
 
-from lib.Sqlite3Helper import Sqlite3Worker
-from lib.db_columns_def import sim_columns
+from .utils import accept_warning
+from lib.Sqlite3Helper import Sqlite3Worker, Operand
+from lib.db_columns_def import sim_columns, filepath_col
+from lib.config_utils import path_not_exist
+from lib.kps_operations import blob_fy
 
 
 class SimilarDataModel(QAbstractTableModel):
@@ -54,12 +57,17 @@ class PageSimilar(QtWidgets.QWidget):
         self.pbn_read_db.setMinimumWidth(config["button_min_width"])
         self.vly_left.addWidget(self.pbn_read_db)
 
+        self.pbn_delete_invalid_data = QtWidgets.QPushButton("删除无效文件数据", self)
+        self.pbn_delete_invalid_data.setMinimumWidth(config["button_min_width"])
+        self.vly_left.addWidget(self.pbn_delete_invalid_data)
+
         self.vly_left.addStretch(1)
 
         self.tbv_m = QtWidgets.QTableView(self)
         self.hly_m.addWidget(self.tbv_m)
 
         self.pbn_read_db.clicked.connect(self.on_pbn_read_db_clicked)
+        self.pbn_delete_invalid_data.clicked.connect(self.on_pbn_delete_invalid_data_clicked)
 
     def on_pbn_read_db_clicked(self):
         _, results = self.sqh.select(self.config["table_name"], sim_columns)
@@ -90,3 +98,16 @@ class PageSimilar(QtWidgets.QWidget):
 
         model = SimilarDataModel(similar_data, self)
         self.tbv_m.setModel(model)
+
+    def on_pbn_delete_invalid_data_clicked(self):
+        if accept_warning(self, True, "警告", "你确定要从数据库删除无效文件的记录吗？"):
+            return
+
+        _, filepaths = self.sqh.select(self.config["table_name"], [filepath_col,])
+        unique_filepaths = set([p[0].decode("utf8") for p in filepaths])
+        invalid_filepaths = [p for p in unique_filepaths if path_not_exist(p)]
+        for path in invalid_filepaths:
+            self.sqh.delete_from(self.config["table_name"],
+                                 where=Operand(filepath_col).equal_to(blob_fy(path)),
+                                 commit=False)
+        self.sqh.commit()
