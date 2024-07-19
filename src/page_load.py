@@ -27,7 +27,7 @@ class WgLoadKps(QtWidgets.QWidget):
         item.pbn_load.setDisabled(True)
 
 
-class TabLoad(QtWidgets.QWidget):
+class PageLoad(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.hly_m = QtWidgets.QHBoxLayout()
