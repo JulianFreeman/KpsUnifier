@@ -57,6 +57,11 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
             self.lne_password.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
             self.pbn_eye.setIcon(self.icon_eye_off)
 
+    def set_loaded(self, loaded: bool):
+        self.is_loaded = loaded
+        self.lb_loaded.setVisible(loaded)
+        self.pbn_load.setDisabled(loaded)
+
 
 class PushButtonWithItem(QtWidgets.QPushButton):
 
