@@ -3,6 +3,8 @@ from PySide6 import QtWidgets, QtCore, QtGui
 
 from .page_load import PageLoad
 from .page_query import PageQuery
+from .page_similar import PageSimilar
+
 from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
@@ -10,7 +12,13 @@ from lib.config_utils import write_config
 
 
 class UiKpsUnifier(object):
-    def __init__(self, default_db_path: str, config: dict, sqh: Sqlite3Worker, window: QtWidgets.QMainWindow):
+    def __init__(
+            self,
+            default_db_path: str,
+            config: dict,
+            sqh: Sqlite3Worker,
+            window: QtWidgets.QMainWindow
+    ):
         window.setWindowTitle('KeePassXC 多合一')
         self.cw = QtWidgets.QWidget(window)
         self.vly_m = QtWidgets.QVBoxLayout()
@@ -26,7 +34,8 @@ class UiKpsUnifier(object):
         self.menu_view = self.menu_bar.addMenu("视图")
         self.act_load = QtGui.QAction("加载", self.cw)
         self.act_query = QtGui.QAction("查询", self.cw)
-        self.menu_view.addActions([self.act_load, self.act_query])
+        self.act_similar = QtGui.QAction("相似度", self.cw)
+        self.menu_view.addActions([self.act_load, self.act_query, self.act_similar])
 
         self.menu_help = self.menu_bar.addMenu("帮助")
         self.act_about = QtGui.QAction("关于", self.cw)
@@ -51,6 +60,8 @@ class UiKpsUnifier(object):
         self.sw_m.addWidget(self.page_load)
         self.page_query = PageQuery(sqh, config, self.cw)
         self.sw_m.addWidget(self.page_query)
+        self.page_similar = PageSimilar(sqh, config, self.cw)
+        self.sw_m.addWidget(self.page_similar)
 
     def update_sqh(self, sqh: Sqlite3Worker):
         self.page_load.update_sqh(sqh)
@@ -71,6 +82,8 @@ class KpsUnifier(QtWidgets.QMainWindow):
         self.ui.act_open.triggered.connect(self.on_act_open_triggered)
         self.ui.act_load.triggered.connect(self.on_act_load_triggered)
         self.ui.act_query.triggered.connect(self.on_act_query_triggered)
+        self.ui.act_similar.triggered.connect(self.on_act_similar_triggered)
+
         self.ui.act_about.triggered.connect(self.on_act_about_triggered)
         self.ui.act_about_qt.triggered.connect(self.on_act_about_qt_triggered)
 
@@ -113,6 +126,9 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def on_act_query_triggered(self):
         self.ui.sw_m.setCurrentIndex(1)
+
+    def on_act_similar_triggered(self):
+        self.ui.sw_m.setCurrentIndex(2)
 
     def on_act_about_triggered(self):
         QtWidgets.QMessageBox.about(

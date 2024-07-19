@@ -8,7 +8,13 @@ from lib.kps_operations import read_kps_to_db
 
 
 class GbxKpsLogin(QtWidgets.QGroupBox):
-    def __init__(self, path: str, sqh: Sqlite3Worker, config: dict, parent=None):
+    def __init__(
+            self,
+            path: str,
+            sqh: Sqlite3Worker,
+            config: dict,
+            parent: QtWidgets.QWidget = None
+    ):
         super().__init__(parent)
         self.sqh = sqh
         self.config = config
@@ -75,10 +81,12 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
 
     def on_pbn_load_clicked(self):
         try:
-            read_kps_to_db(kps_file=self.lne_path.text(),
-                           password=self.lne_password.text(),
-                           table_name=self.config["table_name"],
-                           sqh=self.sqh)
+            read_kps_to_db(
+                kps_file=self.lne_path.text(),
+                password=self.lne_password.text(),
+                table_name=self.config["table_name"],
+                sqh=self.sqh
+            )
         except CredentialsError:
             QtWidgets.QMessageBox.critical(self, "密码错误",
                                            f"{self.lne_path.text()}\n密码错误")

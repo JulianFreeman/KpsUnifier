@@ -1,7 +1,6 @@
 # coding: utf8
 import sqlite3
 from pathlib import Path
-
 from PySide6 import QtWidgets
 
 from .gbx_kps_login import GbxKpsLogin
@@ -10,7 +9,12 @@ from lib.Sqlite3Helper import Sqlite3Worker
 
 
 class WgLoadKps(QtWidgets.QWidget):
-    def __init__(self, sqh: Sqlite3Worker, config: dict, parent=None):
+    def __init__(
+            self,
+            sqh: Sqlite3Worker,
+            config: dict,
+            parent: QtWidgets.QWidget = None
+    ):
         super().__init__(parent)
         self.sqh = sqh
         self.config = config
@@ -55,7 +59,12 @@ class WgLoadKps(QtWidgets.QWidget):
 
 
 class PageLoad(QtWidgets.QWidget):
-    def __init__(self, sqh: Sqlite3Worker, config: dict, parent=None):
+    def __init__(
+            self,
+            sqh: Sqlite3Worker,
+            config: dict,
+            parent: QtWidgets.QWidget = None
+    ):
         super().__init__(parent)
         self.sqh = sqh
         self.config = config

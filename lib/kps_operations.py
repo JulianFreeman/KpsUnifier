@@ -41,7 +41,9 @@ def read_kps_to_db(kps_file: str | PathLike[str], password: str,
                 extract_otp(entry.otp),
                 blob_fy(trim_str(entry.url)),
                 blob_fy(entry.notes),
-                blob_fy("::".join([kps_file] + entry.path[:-1])),
+                str(entry.uuid),
+                blob_fy(kps_file),
+                blob_fy("::".join(entry.path[:-1])),
             ])
 
     sqh.insert_into(table_name, all_columns[1:], values)

@@ -9,7 +9,9 @@ columns_d = {
     "opt": Column("opt", DataType.TEXT),
     "url": Column("url", DataType.BLOB),
     "notes": Column("notes", DataType.BLOB),
-    "path": Column("path", DataType.BLOB, nullable=False),
+    "uuid": Column("uuid", DataType.TEXT, nullable=False),
+    "filepath": Column("filepath", DataType.BLOB, nullable=False),
+    "path": Column("path", DataType.BLOB),
 }
 
 all_columns = [
@@ -20,6 +22,8 @@ all_columns = [
     columns_d["opt"],
     columns_d["url"],
     columns_d["notes"],
+    columns_d["uuid"],
+    columns_d["filepath"],
     columns_d["path"],
 ]
 
@@ -28,4 +32,10 @@ query_columns = [
     columns_d["title"],
     columns_d["username"],
     columns_d["url"],
+]
+
+# 从数据库中读取 UUID 和 文件路径分析相似度
+sim_columns = [
+    columns_d["uuid"],
+    columns_d["filepath"],
 ]
