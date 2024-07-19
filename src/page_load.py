@@ -3,12 +3,10 @@ import sqlite3
 from pathlib import Path
 
 from PySide6 import QtWidgets
-from pykeepass.exceptions import CredentialsError
 
 from .gbx_kps_login import GbxKpsLogin
 from .utils import accept_warning
 from lib.Sqlite3Helper import Sqlite3Worker
-from lib.kps_operations import read_kps_to_db
 
 
 class WgLoadKps(QtWidgets.QWidget):
@@ -31,9 +29,13 @@ class WgLoadKps(QtWidgets.QWidget):
             wg.set_loaded(False)
 
     def add_kps(self, path: str):
-        wg = GbxKpsLogin(path, self)
+        for wg in self.kps_wgs:
+            if wg.path == path:
+                QtWidgets.QMessageBox.warning(self, "警告", "该 KPS 文件已添加。")
+                return
+
+        wg = GbxKpsLogin(path, self.sqh, self.config, self)
         wg.pbn_remove.clicked_with_item.connect(self.on_item_pbn_remove_clicked)
-        wg.pbn_load.clicked_with_item.connect(self.on_item_pbn_load_clicked)
         # 从倒数第二个位置插入，保证弹簧始终在最后
         self.vly_m.insertWidget(self.vly_m.count() - 1, wg)
         self.kps_wgs.append(wg)
@@ -45,24 +47,6 @@ class WgLoadKps(QtWidgets.QWidget):
         self.vly_m.removeWidget(item)
         self.kps_wgs.remove(item)
         item.deleteLater()
-
-    def on_item_pbn_load_clicked(self, item: GbxKpsLogin):
-        try:
-            read_kps_to_db(kps_file=item.lne_path.text(),
-                           password=item.lne_password.text(),
-                           table_name=self.config["table_name"],
-                           sqh=self.sqh)
-        except CredentialsError:
-            QtWidgets.QMessageBox.critical(self, "密码错误",
-                                           f"{item.lne_path.text()}\n密码错误")
-            return
-
-        item.set_loaded(True)
-        loaded_mem = self.config["loaded_memory"]
-        db_name = Path(self.sqh.db_name).name
-        if db_name not in loaded_mem:
-            loaded_mem[db_name] = []
-        loaded_mem[db_name].append(item.lne_path.text())
 
     def update_sqh(self, sqh: Sqlite3Worker):
         self.sqh = sqh

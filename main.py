@@ -22,7 +22,7 @@ def main():
     config = read_config(ORG_NAME, APP_NAME)
     db_path = get_default_db_path(config, ORG_NAME, APP_NAME)
 
-    win = KpsUnifier(db_path, config)
+    win = KpsUnifier(db_path, config, __version__)
     win.show()
     return app.exec()
 

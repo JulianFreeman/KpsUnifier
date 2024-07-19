@@ -28,6 +28,11 @@ class UiKpsUnifier(object):
         self.act_query = QtGui.QAction("查询", self.cw)
         self.menu_view.addActions([self.act_load, self.act_query])
 
+        self.menu_help = self.menu_bar.addMenu("帮助")
+        self.act_about = QtGui.QAction("关于", self.cw)
+        self.act_about_qt = QtGui.QAction("关于 Qt", self.cw)
+        self.menu_help.addActions([self.act_about, self.act_about_qt])
+
         self.hly_top = QtWidgets.QHBoxLayout()
         self.vly_m.addLayout(self.hly_top)
 
@@ -35,6 +40,7 @@ class UiKpsUnifier(object):
         self.lne_db_path.setEnabled(False)
         self.lne_db_path.setPlaceholderText(default_db_path)
         self.cmbx_styles = StyleComboBox(self.cw)
+        self.cmbx_styles.setMinimumWidth(110)
         self.hly_top.addWidget(self.lne_db_path)
         self.hly_top.addWidget(self.cmbx_styles)
 
@@ -52,10 +58,11 @@ class UiKpsUnifier(object):
 
 
 class KpsUnifier(QtWidgets.QMainWindow):
-    def __init__(self, db_path: str, config: dict, parent=None):
+    def __init__(self, db_path: str, config: dict, version: str, parent=None):
         super().__init__(parent)
         self.db_path = db_path
         self.config = config
+        self.version = version
         self.sqh = self.init_db()
 
         self.ui = UiKpsUnifier(self.db_path, self.config, self.sqh, self)
@@ -64,6 +71,8 @@ class KpsUnifier(QtWidgets.QMainWindow):
         self.ui.act_open.triggered.connect(self.on_act_open_triggered)
         self.ui.act_load.triggered.connect(self.on_act_load_triggered)
         self.ui.act_query.triggered.connect(self.on_act_query_triggered)
+        self.ui.act_about.triggered.connect(self.on_act_about_triggered)
+        self.ui.act_about_qt.triggered.connect(self.on_act_about_qt_triggered)
 
     def __del__(self):
         self.config["last_db_path"] = self.db_path
@@ -104,3 +113,13 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def on_act_query_triggered(self):
         self.ui.sw_m.setCurrentIndex(1)
+
+    def on_act_about_triggered(self):
+        QtWidgets.QMessageBox.about(
+            self,
+            "关于",
+            f"一个可以同时处理多个 keepass 文件的工具。\n\n版本：v{self.version}"
+        )
+
+    def on_act_about_qt_triggered(self):
+        QtWidgets.QMessageBox.aboutQt(self, "关于 Qt")
