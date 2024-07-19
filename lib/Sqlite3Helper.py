@@ -255,12 +255,17 @@ def order(column: Column | str | int,
 class Sqlite3Worker(object):
 
     def __init__(self, db_name: str | PathLike[str] = ":memory:"):
+        self._db_name = db_name
         self._conn = sqlite3.connect(db_name)
         self._cursor = self._conn.cursor()
         self._is_closed = False
 
     def __del__(self):
         self.close()
+
+    @property
+    def db_name(self) -> str:
+        return self._db_name
 
     def close(self):
         if self._is_closed is False:
