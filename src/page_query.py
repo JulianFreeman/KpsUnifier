@@ -1,7 +1,8 @@
 # coding: utf8
 import json
-
 from PySide6 import QtWidgets, QtCore
+
+from .da_entry_info import DaEntryInfo
 from lib.Sqlite3Helper import Sqlite3Worker, Expression
 from lib.db_columns_def import query_columns
 
@@ -68,6 +69,7 @@ class PageQuery(QtWidgets.QWidget):
 
         self.pbn_all.clicked.connect(self.on_pbn_all_clicked)
         self.pbn_read_filters.clicked.connect(self.on_pbn_read_filters_clicked)
+        self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
 
         self.set_default_filters()
 
@@ -119,6 +121,14 @@ class PageQuery(QtWidgets.QWidget):
         _, results = self.sqh.select(self.config["table_name"], query_columns)
         model = QueryTableModel(results, self)
         self.trv_m.setModel(model)
+
+    def on_trv_m_double_clicked(self, index: QtCore.QModelIndex):
+        model = index.model()
+        row = index.row()
+        entry_id_index = model.index(row, 0)
+        entry_id = entry_id_index.data(QtCore.Qt.ItemDataRole.DisplayRole)
+        da_entry_info = DaEntryInfo(entry_id, self.config, self.sqh, self)
+        da_entry_info.exec()
 
 
 class PushButtonWithData(QtWidgets.QPushButton):

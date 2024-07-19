@@ -2,7 +2,7 @@
 from .Sqlite3Helper import Column, DataType
 
 columns_d = {
-    "entry_id": Column("entry_id", DataType.INTEGER, primary_key=True),
+    "entry_id": Column("entry_id", DataType.INTEGER, primary_key=True, unique=True),
     "title": Column("title", DataType.BLOB),
     "username": Column("username", DataType.BLOB),
     "password": Column("password", DataType.BLOB),
@@ -41,3 +41,5 @@ sim_columns = [
 ]
 
 filepath_col = columns_d["filepath"]
+
+entry_id_col = columns_d["entry_id"]
