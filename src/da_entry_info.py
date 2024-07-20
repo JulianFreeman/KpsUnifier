@@ -71,12 +71,11 @@ class DaEntryInfo(QtWidgets.QDialog):
     def __init__(
             self,
             entry_id: int,
-            config: dict,
             sqh: Sqlite3Worker,
             parent: QtWidgets.QWidget = None
     ):
         super().__init__(parent)
-        _, results = sqh.select(config["table_name"], all_columns,
+        _, results = sqh.select("entries", all_columns,
                                 where=Operand(entry_id_col).equal_to(entry_id))
 
         entry = results[0]
@@ -88,5 +87,3 @@ class DaEntryInfo(QtWidgets.QDialog):
 
     def sizeHint(self):
         return QtCore.QSize(640, 360)
-
-

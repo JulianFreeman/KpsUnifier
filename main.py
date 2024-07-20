@@ -11,7 +11,7 @@ from lib.config_utils import (
 from src.mw_kps_unifier import KpsUnifier
 import src.rc_kps_unifier
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __version_info__ = tuple(map(int, __version__.split('.')))
 
 ORG_NAME = "JnPrograms"
@@ -27,7 +27,8 @@ def main():
     db_path = get_default_db_path(config, ORG_NAME, APP_NAME)
     secrets_path = get_secrets_path(ORG_NAME, APP_NAME)
 
-    win = KpsUnifier(db_path, secrets_path, config, __version__)
+    win = KpsUnifier(db_path, secrets_path, config,
+                     ORG_NAME, APP_NAME, __version__)
     win.show()
     return app.exec()
 

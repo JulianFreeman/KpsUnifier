@@ -4,7 +4,7 @@ from .Sqlite3Helper import Column, DataType
 sec_columns_d = {
     "secret_id": Column("secret_id", DataType.INTEGER, primary_key=True, unique=True),
     "filepath": Column("filepath", DataType.BLOB),
-    "password": Column("password", DataType.BLOB),
+    "password": Column("password", DataType.BLOB, secure=True),
 }
 
 sec_all_columns = [

@@ -1,6 +1,5 @@
 # coding: utf8
 from itertools import combinations
-from uuid import UUID
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QAbstractTableModel
 
@@ -70,7 +69,7 @@ class PageSimilar(QtWidgets.QWidget):
         self.pbn_delete_invalid_data.clicked.connect(self.on_pbn_delete_invalid_data_clicked)
 
     def on_pbn_read_db_clicked(self):
-        _, results = self.sqh.select(self.config["table_name"], sim_columns)
+        _, results = self.sqh.select("entries", sim_columns)
         file_uuids = get_filepath_uuids_map(results)
 
         files = file_uuids.keys()
@@ -98,11 +97,11 @@ class PageSimilar(QtWidgets.QWidget):
         if accept_warning(self, True, "警告", "你确定要从数据库删除无效文件的记录吗？"):
             return
 
-        _, filepaths = self.sqh.select(self.config["table_name"], [filepath_col,])
+        _, filepaths = self.sqh.select("entries", [filepath_col,])
         unique_filepaths = set([p[0].decode("utf8") for p in filepaths])
         invalid_filepaths = [p for p in unique_filepaths if path_not_exist(p)]
         for path in invalid_filepaths:
-            self.sqh.delete_from(self.config["table_name"],
+            self.sqh.delete_from("entries",
                                  where=Operand(filepath_col).equal_to(blob_fy(path)),
                                  commit=False)
         self.sqh.commit()

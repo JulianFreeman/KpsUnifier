@@ -5,7 +5,6 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
 
 from .da_entry_info import DaEntryInfo
-from .da_target_login import DaTargetLogin
 from .utils import HorizontalLine, get_filepath_uuids_map, accept_warning
 from lib.Sqlite3Helper import Sqlite3Worker, Expression, Operand
 from lib.db_columns_def import (
@@ -18,7 +17,7 @@ from lib.kps_operations import blob_fy
 
 class QueryTableModel(QtCore.QAbstractTableModel):
 
-    def __init__(self, query_results: list[tuple], parent=None):
+    def __init__(self, query_results: list[list], parent=None):
         super().__init__(parent)
         self.query_results = query_results
         self.headers = ["序号", "标题", "用户名", "URL"]
@@ -98,10 +97,6 @@ class UiPageQuery(object):
         self.pbn_execute.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_execute)
 
-        self.pbn_set_target = QtWidgets.QPushButton("目标文件", window)
-        self.pbn_set_target.setMinimumWidth(config["button_min_width"])
-        self.vly_sa_wg.addWidget(self.pbn_set_target)
-
         self.hln_1 = HorizontalLine(window)
         self.vly_sa_wg.addWidget(self.hln_1)
 
@@ -147,7 +142,6 @@ class PageQuery(QtWidgets.QWidget):
         self.ui.act_delete.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
 
         self.ui.pbn_execute.clicked.connect(self.on_pbn_execute_clicked)
-        self.ui.pbn_set_target.clicked.connect(self.on_pbn_set_target_clicked)
 
         self.ui.pbn_all.clicked.connect(self.on_pbn_all_clicked)
         self.ui.pbn_deleted.clicked.connect(self.on_pbn_deleted_clicked)
@@ -169,7 +163,7 @@ class PageQuery(QtWidgets.QWidget):
             },
             {
                 "name": "谷歌文档",
-                "where": "url LIKE 'https://docs.google.com/%' or url LIKE 'https://drive.google.com/%'"
+                "where": "(url LIKE 'https://docs.google.com/%' OR url LIKE 'https://drive.google.com/%')"
             },
         ]
         for fil in default_filters:
@@ -193,7 +187,7 @@ class PageQuery(QtWidgets.QWidget):
             self.set_filter_button(fil)
 
     def on_custom_filters_clicked_with_data(self, data: dict):
-        _, results = self.sqh.select(self.config["table_name"], query_columns,
+        _, results = self.sqh.select("entries", query_columns,
                                      where=Expression(data["where"]).and_(Operand(deleted_col).equal_to(0)))
         model = QueryTableModel(results, self)
         self.ui.trv_m.setModel(model)
@@ -202,20 +196,20 @@ class PageQuery(QtWidgets.QWidget):
         self.sqh = sqh
 
     def on_pbn_all_clicked(self):
-        _, results = self.sqh.select(self.config["table_name"], query_columns,
+        _, results = self.sqh.select("entries", query_columns,
                                      where=Operand(deleted_col).equal_to(0))
         model = QueryTableModel(results, self)
         self.ui.trv_m.setModel(model)
 
     def on_pbn_deleted_clicked(self):
-        _, results = self.sqh.select(self.config["table_name"], query_columns,
+        _, results = self.sqh.select("entries", query_columns,
                                      where=Operand(deleted_col).equal_to(1))
         model = QueryTableModel(results, self)
         self.ui.trv_m.setModel(model)
 
     def on_trv_m_double_clicked(self, index: QtCore.QModelIndex):
         entry_id = index.siblingAtColumn(0).data(QtCore.Qt.ItemDataRole.DisplayRole)
-        da_entry_info = DaEntryInfo(entry_id, self.config, self.sqh, self)
+        da_entry_info = DaEntryInfo(entry_id, self.sqh, self)
         da_entry_info.exec()
 
     def on_trv_m_custom_context_menu_requested(self, pos: QtCore.QPoint):
@@ -228,7 +222,7 @@ class PageQuery(QtWidgets.QWidget):
             for index in indexes if index.column() == 0
         ]
 
-        self.sqh.update(self.config["table_name"], [(status_col, info)],
+        self.sqh.update("entries", [(status_col, info)],
                         where=Operand(entry_id_col).in_(entry_ids))
 
     def on_pbn_execute_clicked(self):
@@ -236,7 +230,7 @@ class PageQuery(QtWidgets.QWidget):
             return
 
         # 删除功能
-        _, results = self.sqh.select(self.config["table_name"], sim_columns,
+        _, results = self.sqh.select("entries", sim_columns,
                                      where=Operand(status_col).equal_to("delete"))
         file_uuids = get_filepath_uuids_map(results)
 
@@ -252,7 +246,7 @@ class PageQuery(QtWidgets.QWidget):
 
             for u in file_uuids[file]:
                 total += 1
-                self.sqh.update(self.config["table_name"], [(deleted_col, 1)],
+                self.sqh.update("entries", [(deleted_col, 1)],
                                 where=Operand(uuid_col).equal_to(u).and_(
                                     Operand(filepath_col).equal_to(blob_fy(file))))
 
@@ -268,10 +262,6 @@ class PageQuery(QtWidgets.QWidget):
 
         QtWidgets.QMessageBox.information(self, "提示",
                                           f"共 {total} 条标记的条目，已删除 {success} 条，无效 {invalid} 条。")
-
-    def on_pbn_set_target_clicked(self):
-        da_target_login = DaTargetLogin(self)
-        da_target_login.exec()
 
 
 class PushButtonWithData(QtWidgets.QPushButton):

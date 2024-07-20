@@ -90,7 +90,7 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
             kp = read_kps_to_db(
                 kps_file=self.lne_path.text(),
                 password=self.lne_password.text(),
-                table_name=self.config["table_name"],
+                table_name="entries",
                 sqh=self.sqh
             )
         except CredentialsError:

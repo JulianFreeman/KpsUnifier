@@ -10,7 +10,7 @@ from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
 from lib.sec_db_columns_def import sec_all_columns
-from lib.config_utils import write_config
+from lib.config_utils import write_config, get_or_generate_key
 
 
 class UiKpsUnifier(object):
@@ -78,10 +78,15 @@ class KpsUnifier(QtWidgets.QMainWindow):
             db_path: str,
             secrets_path: str,
             config: dict,
+            org_name: str,
+            app_name: str,
             version: str,
             parent: QtWidgets.QWidget = None,
     ):
         super().__init__(parent)
+        self.org_name = org_name
+        self.app_name = app_name
+
         self.db_path = db_path
         self.secrets_path = secrets_path
         self.config = config
@@ -103,17 +108,22 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def __del__(self):
         self.config["last_db_path"] = self.db_path
-        write_config(self.config,
-                     QtWidgets.QApplication.organizationName(),
-                     QtWidgets.QApplication.applicationName())
+        write_config(self.config, self.org_name, self.app_name)
 
     def sizeHint(self):
         return QtCore.QSize(860, 640)
 
     def init_db(self) -> Sqlite3Worker:
-        sqh = Sqlite3Worker(self.db_path)
-        sqh.create_table(self.config["table_name"], all_columns, if_not_exists=True)
+        key = get_or_generate_key(self.db_path, self.org_name, self.app_name)
+        sqh = Sqlite3Worker(self.db_path, key)
+        sqh.create_table("entries", all_columns, if_not_exists=True)
         return sqh
+
+    def init_secrets_db(self) -> Sqlite3Worker:
+        key = get_or_generate_key(self.secrets_path, self.org_name, self.app_name)
+        sec_sqh = Sqlite3Worker(self.secrets_path, key)
+        sec_sqh.create_table("secrets", sec_all_columns, if_not_exists=True)
+        return sec_sqh
 
     def update_db(self, filename: str):
         self.db_path = filename
@@ -153,8 +163,3 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def on_act_about_qt_triggered(self):
         QtWidgets.QMessageBox.aboutQt(self, "关于 Qt")
-
-    def init_secrets_db(self) -> Sqlite3Worker:
-        sec_sqh = Sqlite3Worker(self.secrets_path)
-        sec_sqh.create_table("secrets", sec_all_columns, if_not_exists=True)
-        return sec_sqh

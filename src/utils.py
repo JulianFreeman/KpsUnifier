@@ -19,7 +19,7 @@ class HorizontalLine(QtWidgets.QFrame):
         self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
 
 
-def get_filepath_uuids_map(query_results: list[tuple]) -> dict[str, list[str]]:
+def get_filepath_uuids_map(query_results: list[list]) -> dict[str, list[str]]:
     file_uuids: dict[str, list[str]] = {}
     for u, filepath in query_results:
         filepath = filepath.decode("utf8")

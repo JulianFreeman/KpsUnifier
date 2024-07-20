@@ -4,6 +4,8 @@ import sys
 import json
 from pathlib import Path
 
+from cryptography.fernet import Fernet
+
 
 def path_not_exist(path: str | Path) -> bool:
     """
@@ -50,7 +52,6 @@ def read_config(org_name: str, app_name: str) -> dict:
     config_path = get_config_path(org_name, app_name)
     if not config_path.exists():
         config = {
-            "table_name": "entries",
             "button_min_width": 120,
             "last_db_path": "",
             "loaded_memory": {}
@@ -76,3 +77,15 @@ def get_default_db_path(config: dict, org_name: str, app_name: str) -> str:
 def get_secrets_path(org_name: str, app_name: str) -> str:
     app_dir = get_app_dir(org_name, app_name)
     return str(app_dir / "secrets.db")
+
+
+def get_or_generate_key(db_name: str, org_name: str, app_name: str) -> bytes:
+    app_dir = get_app_dir(org_name, app_name)
+    name = Path(db_name).name
+    key_path = app_dir / f"{name}.key"
+    if key_path.exists():
+        key = key_path.read_bytes()
+    else:
+        key = Fernet.generate_key()
+        key_path.write_bytes(key)
+    return key
