@@ -5,7 +5,6 @@ from PySide6 import QtWidgets
 from pykeepass import PyKeePass
 
 from .gbx_kps_login import GbxKpsLogin
-from .da_target_login import DaTargetLogin
 from .utils import accept_warning, HorizontalLine
 from lib.Sqlite3Helper import Sqlite3Worker
 
@@ -82,12 +81,6 @@ class PageLoad(QtWidgets.QWidget):
         self.vly_left = QtWidgets.QVBoxLayout()
         self.hly_m.addLayout(self.vly_left)
 
-        self.pbn_set_target = QtWidgets.QPushButton("设置目标文件", self)
-        # 暂时没用
-        self.pbn_set_target.setDisabled(True)
-        self.pbn_set_target.setMinimumWidth(config["button_min_width"])
-        self.vly_left.addWidget(self.pbn_set_target)
-
         self.hln_1 = HorizontalLine(self)
         self.vly_left.addWidget(self.hln_1)
 
@@ -110,8 +103,6 @@ class PageLoad(QtWidgets.QWidget):
         self.hly_m.addWidget(self.sa_m)
         self.wg_sa = WgLoadKps(config, file_kp, sqh, sec_sqh, self.sa_m)
         self.sa_m.setWidget(self.wg_sa)
-
-        self.pbn_set_target.clicked.connect(self.on_pbn_set_target_clicked)
 
         self.pbn_add_kps.clicked.connect(self.on_pbn_add_kps_clicked)
         self.pbn_clear_db.clicked.connect(self.on_pbn_clear_db_clicked)
@@ -160,7 +151,3 @@ class PageLoad(QtWidgets.QWidget):
         # 更新kps加载状态
         for wg in self.wg_sa.kps_wgs:
             self.wg_sa.update_load_status(wg)
-
-    def on_pbn_set_target_clicked(self):
-        da_target_login = DaTargetLogin(self)
-        da_target_login.exec()

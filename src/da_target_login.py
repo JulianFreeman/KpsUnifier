@@ -43,8 +43,6 @@ class UiDaTargetLogin(object):
 
         self.vly_m.addStretch(1)
 
-        self.pbn_ok.setFocus()
-
 
 class DaTargetLogin(QtWidgets.QDialog):
     def __init__(self, parent=None):

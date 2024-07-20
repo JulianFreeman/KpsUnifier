@@ -5,6 +5,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
 
 from .da_entry_info import DaEntryInfo
+from .da_target_login import DaTargetLogin
 from .utils import HorizontalLine, get_filepath_uuids_map, accept_warning
 from lib.Sqlite3Helper import Sqlite3Worker, Expression, Operand
 from lib.db_columns_def import (
@@ -93,6 +94,10 @@ class UiPageQuery(object):
         self.sa_wg.setLayout(self.vly_sa_wg)
         self.sa_left.setWidget(self.sa_wg)
 
+        self.pbn_set_target = QtWidgets.QPushButton("设置目标文件", window)
+        self.pbn_set_target.setMinimumWidth(config["button_min_width"])
+        self.vly_sa_wg.addWidget(self.pbn_set_target)
+
         self.pbn_execute = QtWidgets.QPushButton("执行操作", window)
         self.pbn_execute.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_execute)
@@ -135,12 +140,14 @@ class PageQuery(QtWidgets.QWidget):
         self.sec_sqh = sec_sqh
         self.config = config
         self.file_kp = file_kp
+        self.tar_kp: PyKeePass | None = None
         self.ui = UiPageQuery(config, self)
 
         self.ui.act_keep.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
         self.ui.act_transfer.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
         self.ui.act_delete.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
 
+        self.ui.pbn_set_target.clicked.connect(self.on_pbn_set_target_clicked)
         self.ui.pbn_execute.clicked.connect(self.on_pbn_execute_clicked)
 
         self.ui.pbn_all.clicked.connect(self.on_pbn_all_clicked)
@@ -225,43 +232,114 @@ class PageQuery(QtWidgets.QWidget):
         self.sqh.update("entries", [(status_col, info)],
                         where=Operand(entry_id_col).in_(entry_ids))
 
-    def on_pbn_execute_clicked(self):
-        if accept_warning(self, True, "警告", "你确定要执行转移和删除操作吗？"):
-            return
+    def get_kp(self, filepath: str) -> PyKeePass | None:
+        if filepath not in self.file_kp:
+            _, results = self.sec_sqh.select("secrets", [sec_password_col],
+                                             where=Operand(sec_filepath_col).equal_to(filepath))
+            if len(results) == 0:
+                QtWidgets.QMessageBox.critical(self, "错误", f"请尝试重新加载\n{filepath}")
+                return None
+            password = results[-1][0].decode("utf-8")
+            kp = PyKeePass(filepath, password)
+        else:
+            kp = self.file_kp[filepath]
+        return kp
 
-        # 删除功能
-        _, results = self.sqh.select("entries", sim_columns,
-                                     where=Operand(status_col).equal_to("delete"))
+    def delete_the_delete_and_transfer(self, transfer: bool = False):
+        cond = Operand(status_col).equal_to("delete")
+        if transfer is True:
+            cond = cond.or_(Operand(status_col).equal_to("transfer"), high_priority=True)
+        cond = cond.and_(Operand(deleted_col).equal_to(0))
+
+        _, results = self.sqh.select("entries", sim_columns, where=cond)
         file_uuids = get_filepath_uuids_map(results)
 
         total, success, invalid = 0, 0, 0
         for file in file_uuids:
-            if file not in self.file_kp:
-                _, results = self.sec_sqh.select("secrets", [sec_password_col],
-                                                 where=Operand(sec_filepath_col).equal_to(blob_fy(file)))
-                password = results[-1][0].decode("utf-8")
-                kp = PyKeePass(file, password)
-            else:
-                kp = self.file_kp[file]
+            kp = self.get_kp(file)
+            if kp is None:
+                total += len(file_uuids[file])
+                invalid += len(file_uuids[file])
+                continue
 
             for u in file_uuids[file]:
                 total += 1
-                self.sqh.update("entries", [(deleted_col, 1)],
-                                where=Operand(uuid_col).equal_to(u).and_(
-                                    Operand(filepath_col).equal_to(blob_fy(file))))
-
                 entry = kp.find_entries(uuid=UUID(u), first=True)
                 if entry is None:
                     invalid += 1
                     continue
 
                 kp.delete_entry(entry)
+                self.sqh.update("entries", [(deleted_col, 1)],
+                                where=Operand(uuid_col).equal_to(u).and_(
+                                    Operand(filepath_col).equal_to(blob_fy(file))))
                 success += 1
 
             kp.save()
 
         QtWidgets.QMessageBox.information(self, "提示",
                                           f"共 {total} 条标记的条目，已删除 {success} 条，无效 {invalid} 条。")
+
+    def transfer_the_transfer(self):
+        # 只找标记为转移且还未删除的
+        _, results = self.sqh.select("entries", sim_columns,
+                                     where=Operand(status_col).equal_to("transfer")
+                                     .and_(Operand(deleted_col).equal_to(0)))
+        file_uuids = get_filepath_uuids_map(results)
+
+        total, success, invalid = 0, 0, 0
+        for i, file in enumerate(file_uuids, start=1):
+            kp = self.get_kp(file)
+            if kp is None:
+                total += len(file_uuids[file])
+                invalid += len(file_uuids[file])
+                continue
+
+            dest_group = self.tar_kp.find_groups(name=file, first=True,
+                                                 group=self.tar_kp.root_group,
+                                                 recursive=False)
+            if dest_group is None:
+                dest_group = self.tar_kp.add_group(self.tar_kp.root_group, file)
+            for u in file_uuids[file]:
+                total += 1
+                entry = kp.find_entries(uuid=UUID(u), first=True)
+                if entry is None:
+                    invalid += 1
+                    continue
+
+                self.tar_kp.add_entry(
+                    dest_group,
+                    entry.title or "",
+                    entry.username or "",
+                    entry.password or "",
+                    entry.url,
+                    entry.notes,
+                    otp=entry.otp,
+                    force_creation=True
+                )
+                success += 1
+        self.tar_kp.save()
+        QtWidgets.QMessageBox.information(self, "提示",
+                                          f"共 {total} 条转移条目，成功 {success} 条，失败 {invalid} 条。")
+
+    def on_pbn_execute_clicked(self):
+        if accept_warning(self, True, "警告", "你确定要执行转移和删除操作吗？"):
+            return
+
+        transfer = self.tar_kp is not None
+        if accept_warning(self, self.tar_kp is None, "警告",
+                          "还没有设置目标文件，继续则只会执行删除操作，继续吗？"):
+            return
+
+        if transfer:
+            self.transfer_the_transfer()
+
+        self.delete_the_delete_and_transfer(transfer)
+
+    def on_pbn_set_target_clicked(self):
+        da_target_login = DaTargetLogin(self)
+        da_target_login.exec()
+        self.tar_kp = da_target_login.tar_kp
 
 
 class PushButtonWithData(QtWidgets.QPushButton):

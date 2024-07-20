@@ -3,7 +3,7 @@ from itertools import combinations
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QAbstractTableModel
 
-from .utils import accept_warning, get_filepath_uuids_map
+from .utils import accept_warning, get_filepath_uuids_map, HorizontalLine
 from lib.Sqlite3Helper import Sqlite3Worker, Operand
 from lib.db_columns_def import sim_columns, filepath_col
 from lib.config_utils import path_not_exist
@@ -51,6 +51,9 @@ class PageSimilar(QtWidgets.QWidget):
 
         self.vly_left = QtWidgets.QVBoxLayout()
         self.hly_m.addLayout(self.vly_left)
+
+        self.hln_1 = HorizontalLine(self)
+        self.vly_left.addWidget(self.hln_1)
 
         self.pbn_read_db = QtWidgets.QPushButton("读取数据库", self)
         self.pbn_read_db.setMinimumWidth(config["button_min_width"])
