@@ -4,7 +4,7 @@ from uuid import UUID
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QAbstractTableModel
 
-from .utils import accept_warning
+from .utils import accept_warning, get_filepath_uuids_map
 from lib.Sqlite3Helper import Sqlite3Worker, Operand
 from lib.db_columns_def import sim_columns, filepath_col
 from lib.config_utils import path_not_exist
@@ -71,12 +71,7 @@ class PageSimilar(QtWidgets.QWidget):
 
     def on_pbn_read_db_clicked(self):
         _, results = self.sqh.select(self.config["table_name"], sim_columns)
-        file_uuids: dict[str, list[UUID]] = {}
-        for u, filepath in results:
-            filepath = filepath.decode("utf8")
-            if filepath not in file_uuids:
-                file_uuids[filepath] = []
-            file_uuids[filepath].append(u)
+        file_uuids = get_filepath_uuids_map(results)
 
         files = file_uuids.keys()
         if len(files) < 2:

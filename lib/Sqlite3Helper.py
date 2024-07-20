@@ -363,7 +363,7 @@ class Sqlite3Worker(object):
         return ", ".join(columns_str_ls)
 
     def insert_into(self, table_name: str, columns: list[Column | str],
-                    values: list[list[str | int | float]],
+                    values: list[list[str | int | float | BlobType]],
                     *, execute: bool = True, commit: bool = True) -> str:
         col_count = len(columns)
         columns_str = self._columns_to_string(columns)

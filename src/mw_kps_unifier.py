@@ -1,5 +1,6 @@
 # coding: utf8
 from PySide6 import QtWidgets, QtCore, QtGui
+from pykeepass import PyKeePass
 
 from .page_load import PageLoad
 from .page_query import PageQuery
@@ -8,6 +9,7 @@ from .page_similar import PageSimilar
 from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
+from lib.sec_db_columns_def import sec_all_columns
 from lib.config_utils import write_config
 
 
@@ -16,7 +18,9 @@ class UiKpsUnifier(object):
             self,
             default_db_path: str,
             config: dict,
+            file_kp: dict[str, PyKeePass],
             sqh: Sqlite3Worker,
+            sec_sqh: Sqlite3Worker,
             window: QtWidgets.QMainWindow
     ):
         window.setWindowTitle('KeePassXC 多合一')
@@ -56,9 +60,9 @@ class UiKpsUnifier(object):
         self.sw_m = QtWidgets.QStackedWidget(self.cw)
         self.vly_m.addWidget(self.sw_m)
 
-        self.page_load = PageLoad(sqh, config, self.cw)
+        self.page_load = PageLoad(config, file_kp, sqh, sec_sqh, self.cw)
         self.sw_m.addWidget(self.page_load)
-        self.page_query = PageQuery(sqh, config, self.cw)
+        self.page_query = PageQuery(config, file_kp, sqh, sec_sqh, self.cw)
         self.sw_m.addWidget(self.page_query)
         self.page_similar = PageSimilar(sqh, config, self.cw)
         self.sw_m.addWidget(self.page_similar)
@@ -69,14 +73,24 @@ class UiKpsUnifier(object):
 
 
 class KpsUnifier(QtWidgets.QMainWindow):
-    def __init__(self, db_path: str, config: dict, version: str, parent=None):
+    def __init__(
+            self,
+            db_path: str,
+            secrets_path: str,
+            config: dict,
+            version: str,
+            parent: QtWidgets.QWidget = None,
+    ):
         super().__init__(parent)
         self.db_path = db_path
+        self.secrets_path = secrets_path
         self.config = config
         self.version = version
+        self.file_kp: dict[str, PyKeePass] = {}
         self.sqh = self.init_db()
+        self.sec_sqh = self.init_secrets_db()
 
-        self.ui = UiKpsUnifier(self.db_path, self.config, self.sqh, self)
+        self.ui = UiKpsUnifier(self.db_path, self.config, self.file_kp, self.sqh, self.sec_sqh, self)
 
         self.ui.act_new.triggered.connect(self.on_act_new_triggered)
         self.ui.act_open.triggered.connect(self.on_act_open_triggered)
@@ -139,3 +153,8 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
     def on_act_about_qt_triggered(self):
         QtWidgets.QMessageBox.aboutQt(self, "关于 Qt")
+
+    def init_secrets_db(self) -> Sqlite3Worker:
+        sec_sqh = Sqlite3Worker(self.secrets_path)
+        sec_sqh.create_table("secrets", sec_all_columns, if_not_exists=True)
+        return sec_sqh

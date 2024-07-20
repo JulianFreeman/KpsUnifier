@@ -3,7 +3,11 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from lib.config_utils import get_default_db_path, read_config
+from lib.config_utils import (
+    get_default_db_path,
+    read_config,
+    get_secrets_path,
+)
 from src.mw_kps_unifier import KpsUnifier
 import src.rc_kps_unifier
 
@@ -21,8 +25,9 @@ def main():
 
     config = read_config(ORG_NAME, APP_NAME)
     db_path = get_default_db_path(config, ORG_NAME, APP_NAME)
+    secrets_path = get_secrets_path(ORG_NAME, APP_NAME)
 
-    win = KpsUnifier(db_path, config, __version__)
+    win = KpsUnifier(db_path, secrets_path, config, __version__)
     win.show()
     return app.exec()
 

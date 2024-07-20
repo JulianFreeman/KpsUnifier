@@ -42,8 +42,8 @@ def get_app_dir(org_name: str, app_name: str) -> Path:
 
 
 def get_config_path(org_name: str, app_name: str) -> Path:
-    data_dir = get_app_dir(org_name, app_name)
-    return Path(data_dir, "config.json")
+    app_dir = get_app_dir(org_name, app_name)
+    return Path(app_dir, "config.json")
 
 
 def read_config(org_name: str, app_name: str) -> dict:
@@ -71,3 +71,8 @@ def get_default_db_path(config: dict, org_name: str, app_name: str) -> str:
         app_dir = get_app_dir(org_name, app_name)
         return str(app_dir / f"default.db")
     return config["last_db_path"]
+
+
+def get_secrets_path(org_name: str, app_name: str) -> str:
+    app_dir = get_app_dir(org_name, app_name)
+    return str(app_dir / "secrets.db")

@@ -2,6 +2,7 @@
 import sqlite3
 from pathlib import Path
 from PySide6 import QtWidgets
+from pykeepass import PyKeePass
 
 from .gbx_kps_login import GbxKpsLogin
 from .utils import accept_warning
@@ -11,13 +12,17 @@ from lib.Sqlite3Helper import Sqlite3Worker
 class WgLoadKps(QtWidgets.QWidget):
     def __init__(
             self,
-            sqh: Sqlite3Worker,
             config: dict,
+            file_kp: dict[str, PyKeePass],
+            sqh: Sqlite3Worker,
+            sec_sqh: Sqlite3Worker,
             parent: QtWidgets.QWidget = None
     ):
         super().__init__(parent)
         self.sqh = sqh
+        self.sec_sqh = sec_sqh
         self.config = config
+        self.file_kp = file_kp
         self.kps_wgs: list[GbxKpsLogin] = []
 
         self.vly_m = QtWidgets.QVBoxLayout()
@@ -38,7 +43,7 @@ class WgLoadKps(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "警告", "该 KPS 文件已添加。")
                 return
 
-        wg = GbxKpsLogin(path, self.sqh, self.config, self)
+        wg = GbxKpsLogin(path, self.config, self.file_kp, self.sqh, self.sec_sqh, self)
         wg.pbn_remove.clicked_with_item.connect(self.on_item_pbn_remove_clicked)
         # 从倒数第二个位置插入，保证弹簧始终在最后
         self.vly_m.insertWidget(self.vly_m.count() - 1, wg)
@@ -61,9 +66,11 @@ class WgLoadKps(QtWidgets.QWidget):
 class PageLoad(QtWidgets.QWidget):
     def __init__(
             self,
-            sqh: Sqlite3Worker,
             config: dict,
-            parent: QtWidgets.QWidget = None
+            file_kp: dict[str, PyKeePass],
+            sqh: Sqlite3Worker,
+            sec_sqh: Sqlite3Worker,
+            parent: QtWidgets.QWidget = None,
     ):
         super().__init__(parent)
         self.sqh = sqh
@@ -91,7 +98,7 @@ class PageLoad(QtWidgets.QWidget):
         self.sa_m = QtWidgets.QScrollArea(self)
         self.sa_m.setWidgetResizable(True)
         self.hly_m.addWidget(self.sa_m)
-        self.wg_sa = WgLoadKps(sqh, config, self.sa_m)
+        self.wg_sa = WgLoadKps(config, file_kp, sqh, sec_sqh, self.sa_m)
         self.sa_m.setWidget(self.wg_sa)
 
         self.pbn_add_kps.clicked.connect(self.on_pbn_add_kps_clicked)

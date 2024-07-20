@@ -1,24 +1,30 @@
 # coding: utf8
 from pathlib import Path
 from PySide6 import QtWidgets, QtGui, QtCore
+from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
 
 from lib.Sqlite3Helper import Sqlite3Worker
-from lib.kps_operations import read_kps_to_db
+from lib.kps_operations import read_kps_to_db, blob_fy
+from lib.sec_db_columns_def import insert_sec_columns
 
 
 class GbxKpsLogin(QtWidgets.QGroupBox):
     def __init__(
             self,
             path: str,
-            sqh: Sqlite3Worker,
             config: dict,
+            file_kp: dict[str, PyKeePass],
+            sqh: Sqlite3Worker,
+            sec_sqh: Sqlite3Worker,
             parent: QtWidgets.QWidget = None
     ):
         super().__init__(parent)
-        self.sqh = sqh
-        self.config = config
         self.path = path
+        self.config = config
+        self.file_kp = file_kp
+        self.sqh = sqh
+        self.sec_sqh = sec_sqh
 
         self.icon_eye = QtGui.QIcon(":/asset/img/eye.svg")
         self.icon_eye_off = QtGui.QIcon(":/asset/img/eye-off.svg")
@@ -81,7 +87,7 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
 
     def on_pbn_load_clicked(self):
         try:
-            read_kps_to_db(
+            kp = read_kps_to_db(
                 kps_file=self.lne_path.text(),
                 password=self.lne_password.text(),
                 table_name=self.config["table_name"],
@@ -91,6 +97,11 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
             QtWidgets.QMessageBox.critical(self, "密码错误",
                                            f"{self.lne_path.text()}\n密码错误")
             return
+
+        self.file_kp[self.lne_path.text()] = kp
+        self.sec_sqh.insert_into("secrets", insert_sec_columns, [
+            [blob_fy(self.lne_path.text()), blob_fy(self.lne_password.text())]
+        ])
 
         self.lne_password.clear()
         self.set_loaded(True)
