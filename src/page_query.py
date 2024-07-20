@@ -1,10 +1,10 @@
 # coding: utf8
 import json
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 
 from .da_entry_info import DaEntryInfo
-from lib.Sqlite3Helper import Sqlite3Worker, Expression
-from lib.db_columns_def import query_columns
+from lib.Sqlite3Helper import Sqlite3Worker, Expression, Operand
+from lib.db_columns_def import query_columns, status_col, entry_id_col
 
 
 class QueryTableModel(QtCore.QAbstractTableModel):
@@ -13,6 +13,25 @@ class QueryTableModel(QtCore.QAbstractTableModel):
         super().__init__(parent)
         self.query_results = query_results
         self.headers = ["序号", "标题", "用户名", "URL"]
+
+        self.light_status_colors = {
+            "keep": QtGui.QBrush(QtGui.QColor("lightgreen")),
+            "transfer": QtGui.QBrush(QtGui.QColor("moccasin")),
+            "delete": QtGui.QBrush(QtGui.QColor("pink")),
+            "none": QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
+        }
+        self.dark_status_colors = {
+            "keep": QtGui.QBrush(QtGui.QColor("green")),
+            "transfer": QtGui.QBrush(QtGui.QColor("orange")),
+            "delete": QtGui.QBrush(QtGui.QColor("orangered")),
+            "none": QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
+        }
+        if QtWidgets.QApplication.style().name() == "windowsvista":
+            self.status_colors = self.light_status_colors
+        elif QtWidgets.QApplication.styleHints().colorScheme() == QtCore.Qt.ColorScheme.Dark:
+            self.status_colors = self.dark_status_colors
+        else:
+            self.status_colors = self.light_status_colors
 
     def rowCount(self, parent: QtCore.QModelIndex = ...):
         return len(self.query_results)
@@ -26,6 +45,14 @@ class QueryTableModel(QtCore.QAbstractTableModel):
             if isinstance(item, bytes):
                 return item.decode("utf-8")
             return item
+        if role == QtCore.Qt.ItemDataRole.BackgroundRole:
+            status = self.query_results[index.row()][-1]  # 最后一列是状态
+            if status is None:
+                status = "none"
+            return self.status_colors[status]
+        if role == QtCore.Qt.ItemDataRole.TextAlignmentRole:
+            if index.column() == 0:
+                return QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if orientation == QtCore.Qt.Orientation.Horizontal:
@@ -38,6 +65,19 @@ class PageQuery(QtWidgets.QWidget):
         super().__init__(parent)
         self.sqh = sqh
         self.config = config
+
+        # 右键菜单
+        self.menu_ctx = QtWidgets.QMenu(self)
+        self.act_keep = ActionWithStr("keep", "保留", self)
+        self.act_transfer = ActionWithStr("transfer", "转移", self)
+        self.act_delete = ActionWithStr("delete", "删除", self)
+        self.menu_ctx.addActions([self.act_keep, self.act_transfer, self.act_delete])
+
+        self.act_keep.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
+        self.act_transfer.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
+        self.act_delete.triggered_with_str.connect(self.on_act_mark_triggered_with_str)
+
+        # 主布局
 
         self.hly_m = QtWidgets.QHBoxLayout()
         self.setLayout(self.hly_m)
@@ -64,12 +104,15 @@ class PageQuery(QtWidgets.QWidget):
         self.vly_sa_wg.addWidget(self.pbn_read_filters)
 
         self.trv_m = QtWidgets.QTreeView(self)
+        self.trv_m.setSelectionMode(QtWidgets.QTreeView.SelectionMode.ExtendedSelection)
+        self.trv_m.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         # self.trv_m.setSortingEnabled(True)
         self.hly_m.addWidget(self.trv_m)
 
         self.pbn_all.clicked.connect(self.on_pbn_all_clicked)
         self.pbn_read_filters.clicked.connect(self.on_pbn_read_filters_clicked)
         self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
+        self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
 
         self.set_default_filters()
 
@@ -123,12 +166,22 @@ class PageQuery(QtWidgets.QWidget):
         self.trv_m.setModel(model)
 
     def on_trv_m_double_clicked(self, index: QtCore.QModelIndex):
-        model = index.model()
-        row = index.row()
-        entry_id_index = model.index(row, 0)
-        entry_id = entry_id_index.data(QtCore.Qt.ItemDataRole.DisplayRole)
+        entry_id = index.siblingAtColumn(0).data(QtCore.Qt.ItemDataRole.DisplayRole)
         da_entry_info = DaEntryInfo(entry_id, self.config, self.sqh, self)
         da_entry_info.exec()
+
+    def on_trv_m_custom_context_menu_requested(self, pos: QtCore.QPoint):
+        self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
+
+    def on_act_mark_triggered_with_str(self, info: str):
+        indexes = self.trv_m.selectedIndexes()
+        entry_ids = [
+            index.data(QtCore.Qt.ItemDataRole.DisplayRole)
+            for index in indexes if index.column() == 0
+        ]
+
+        self.sqh.update(self.config["table_name"], [(status_col, info)],
+                        where=Operand(entry_id_col).in_(entry_ids))
 
 
 class PushButtonWithData(QtWidgets.QPushButton):
@@ -142,3 +195,16 @@ class PushButtonWithData(QtWidgets.QPushButton):
 
     def on_self_clicked(self):
         self.clicked_with_data.emit(self.data)
+
+
+class ActionWithStr(QtGui.QAction):
+
+    triggered_with_str = QtCore.Signal(str)
+
+    def __init__(self, info: str, title: str, parent: QtWidgets.QWidget = None):
+        super().__init__(title, parent)
+        self.info = info
+        self.triggered.connect(self.on_self_triggered)
+
+    def on_self_triggered(self):
+        self.triggered_with_str.emit(self.info)

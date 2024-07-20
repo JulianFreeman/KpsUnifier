@@ -1,7 +1,7 @@
 # coding: utf8
 from os import PathLike
 from pykeepass import PyKeePass
-from lib.db_columns_def import all_columns
+from lib.db_columns_def import insert_columns
 from .Sqlite3Helper import Sqlite3Worker, BlobType
 
 
@@ -46,5 +46,5 @@ def read_kps_to_db(kps_file: str | PathLike[str], password: str,
                 blob_fy("::".join(entry.path[:-1])),
             ])
 
-    sqh.insert_into(table_name, all_columns[1:], values)
+    sqh.insert_into(table_name, insert_columns, values)
     return kp

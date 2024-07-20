@@ -12,6 +12,7 @@ columns_d = {
     "uuid": Column("uuid", DataType.TEXT, nullable=False),
     "filepath": Column("filepath", DataType.BLOB, nullable=False),
     "path": Column("path", DataType.BLOB),
+    "status": Column("status", DataType.TEXT),  # 只有三种状态：keep, transfer, delete
 }
 
 all_columns = [
@@ -25,13 +26,19 @@ all_columns = [
     columns_d["uuid"],
     columns_d["filepath"],
     columns_d["path"],
+    columns_d["status"],
 ]
 
+# 插入数据时使用的列
+insert_columns = all_columns[1:-1]
+
+# 查询数据时使用的列
 query_columns = [
     columns_d["entry_id"],
     columns_d["title"],
     columns_d["username"],
     columns_d["url"],
+    columns_d["status"],
 ]
 
 # 从数据库中读取 UUID 和 文件路径分析相似度
@@ -41,5 +48,5 @@ sim_columns = [
 ]
 
 filepath_col = columns_d["filepath"]
-
 entry_id_col = columns_d["entry_id"]
+status_col = columns_d["status"]
