@@ -5,6 +5,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
 
 from .da_entry_info import DaEntryInfo
+from .da_target_login import DaTargetLogin
 from .utils import HorizontalLine, get_filepath_uuids_map, accept_warning
 from lib.Sqlite3Helper import Sqlite3Worker, Expression, Operand
 from lib.db_columns_def import (
@@ -269,7 +270,8 @@ class PageQuery(QtWidgets.QWidget):
                                           f"共 {total} 条标记的条目，已删除 {success} 条，无效 {invalid} 条。")
 
     def on_pbn_set_target_clicked(self):
-        pass
+        da_target_login = DaTargetLogin(self)
+        da_target_login.exec()
 
 
 class PushButtonWithData(QtWidgets.QPushButton):

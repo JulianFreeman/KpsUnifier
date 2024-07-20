@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>asset/img/eye.svg</file>
-        <file>asset/img/eye-off.svg</file>
-    </qresource>
-</RCC>
