@@ -12,7 +12,7 @@ from lib.config_utils import (
 from src.mw_kps_unifier import KpsUnifier
 import src.rc_kps_unifier
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 __version_info__ = tuple(map(int, __version__.split('.')))
 
 ORG_NAME = "JnPrograms"

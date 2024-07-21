@@ -60,7 +60,7 @@ class WgLoadKps(QtWidgets.QWidget):
     def update_sqh(self, sqh: Sqlite3Worker):
         self.sqh = sqh
         for wg in self.kps_wgs:
-            wg.set_loaded(False)
+            self.update_load_status(wg)
 
 
 class PageLoad(QtWidgets.QWidget):
