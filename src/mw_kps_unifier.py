@@ -24,6 +24,8 @@ class UiKpsUnifier(object):
             window: QtWidgets.QMainWindow
     ):
         window.setWindowTitle('KeePassXC 多合一')
+        window.setWindowIcon(QtGui.QIcon(":/asset/kps-unifier.png"))
+
         self.cw = QtWidgets.QWidget(window)
         self.vly_m = QtWidgets.QVBoxLayout()
         self.cw.setLayout(self.vly_m)

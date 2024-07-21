@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>asset/kps-unifier.png</file>
     <file>asset/img/ellipsis.svg</file>
     <file>asset/img/eye.svg</file>
     <file>asset/img/eye-off.svg</file>

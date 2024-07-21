@@ -110,6 +110,8 @@ class UiPageQuery(object):
         self.vly_sa_wg.addWidget(self.pbn_all)
 
         self.pbn_deleted = QtWidgets.QPushButton("已删除", self.sa_wg)
+        # 暂时先隐藏
+        self.pbn_deleted.setVisible(False)
         self.pbn_deleted.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_deleted)
 
