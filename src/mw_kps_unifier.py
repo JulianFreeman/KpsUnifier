@@ -10,7 +10,7 @@ from .cmbx_styles import StyleComboBox
 from lib.Sqlite3Helper import Sqlite3Worker
 from lib.db_columns_def import all_columns
 from lib.sec_db_columns_def import sec_all_columns
-from lib.config_utils import write_config, get_or_generate_key
+from lib.config_utils import get_or_generate_key
 
 
 class UiKpsUnifier(object):
@@ -72,6 +72,7 @@ class UiKpsUnifier(object):
     def update_sqh(self, sqh: Sqlite3Worker):
         self.page_load.update_sqh(sqh)
         self.page_query.update_sqh(sqh)
+        self.page_similar.update_sqh(sqh)
 
 
 class KpsUnifier(QtWidgets.QMainWindow):
@@ -107,10 +108,6 @@ class KpsUnifier(QtWidgets.QMainWindow):
 
         self.ui.act_about.triggered.connect(self.on_act_about_triggered)
         self.ui.act_about_qt.triggered.connect(self.on_act_about_qt_triggered)
-
-    def __del__(self):
-        self.config["last_db_path"] = self.db_path
-        write_config(self.config, self.org_name, self.app_name)
 
     def sizeHint(self):
         return QtCore.QSize(860, 640)

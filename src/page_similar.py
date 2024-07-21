@@ -71,6 +71,9 @@ class PageSimilar(QtWidgets.QWidget):
         self.pbn_read_db.clicked.connect(self.on_pbn_read_db_clicked)
         self.pbn_delete_invalid_data.clicked.connect(self.on_pbn_delete_invalid_data_clicked)
 
+    def update_sqh(self, sqh: Sqlite3Worker):
+        self.sqh = sqh
+
     def on_pbn_read_db_clicked(self):
         _, results = self.sqh.select("entries", sim_columns)
         file_uuids = get_filepath_uuids_map(results)
