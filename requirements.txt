@@ -1,4 +1,4 @@
 cryptography==43.0.0
-Nuitka==2.3.11
+pyinstaller==6.9.0
 pykeepass==4.1.0
 PySide6-Essentials==6.5.2

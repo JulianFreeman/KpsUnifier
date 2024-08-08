@@ -1,3 +1,3 @@
 @echo off
 
-nuitka --standalone .\main.py --enable-plugin=pyside6 --windows-console-mode=disable --output-filename=KpsUnifier --windows-icon-from-ico=kps-unifier.ico
+pyinstaller -D -w -i ..\kps-unifier.ico --workpath .\build\build --distpath .\build\dist --specpath .\build --name KpsUnifier .\main.py

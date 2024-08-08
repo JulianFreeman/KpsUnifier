@@ -1,3 +1,3 @@
 #!/bin/zsh
 
-python -m nuitka --macos-create-app-bundle --windows-console-mode=disable --enable-plugin=pyside6 --macos-app-icon=kps-unifier.icns --macos-app-name=KpsUnifier --output-filename=KpsUnifier --remove-output ./main.py
+pyinstaller -D -w -i ../kps-unifier.icns --workpath build/build --distpath build/dist --specpath build --name KpsUnifier main.py
