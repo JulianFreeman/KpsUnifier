@@ -1,5 +1,6 @@
 # coding: utf8
 import json
+from pathlib import Path
 from uuid import UUID
 from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
@@ -117,7 +118,13 @@ class UiPageQuery(object):
 
         self.vly_sa_wg.addStretch(1)
 
-        self.pbn_read_filters = QtWidgets.QPushButton("更多过滤", window)
+        self.lne_entries_count = QtWidgets.QLineEdit(self.sa_wg)
+        self.lne_entries_count.setDisabled(True)
+        self.lne_entries_count.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.lne_entries_count.setMinimumWidth(config["button_min_width"])
+        self.vly_sa_wg.addWidget(self.lne_entries_count)
+
+        self.pbn_read_filters = QtWidgets.QPushButton("更多过滤", self.sa_wg)
         self.pbn_read_filters.setMinimumWidth(config["button_min_width"])
         self.vly_sa_wg.addWidget(self.pbn_read_filters)
 
@@ -181,11 +188,11 @@ class PageQuery(QtWidgets.QWidget):
     def set_filter_button(self, fil: dict):
         pbn_fil = PushButtonWithData(fil, self.ui.sa_wg, fil["name"])
         pbn_fil.setMinimumWidth(self.config["button_min_width"])
-        self.ui.vly_sa_wg.insertWidget(self.ui.vly_sa_wg.count() - 2, pbn_fil)
+        self.ui.vly_sa_wg.insertWidget(self.ui.vly_sa_wg.count() - 3, pbn_fil)
         pbn_fil.clicked_with_data.connect(self.on_custom_filters_clicked_with_data)
 
     def on_pbn_read_filters_clicked(self):
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "打开", "../",
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "打开", self.config["last_open_path"],
                                                             filter="JSON 文件 (*.json);;所有文件 (*)")
         if len(filename) == 0:
             return
@@ -194,12 +201,14 @@ class PageQuery(QtWidgets.QWidget):
 
         for fil in filter_ls:
             self.set_filter_button(fil)
+        self.config["last_open_path"] = str(Path(filename).parent)
 
     def on_custom_filters_clicked_with_data(self, data: dict):
         _, results = self.sqh.select("entries", query_columns,
                                      where=Expression(data["where"]).and_(Operand(deleted_col).equal_to(0)))
         model = QueryTableModel(results, self)
         self.ui.trv_m.setModel(model)
+        self.ui.lne_entries_count.setText(str(model.rowCount()))
 
     def update_sqh(self, sqh: Sqlite3Worker):
         self.sqh = sqh
@@ -209,6 +218,7 @@ class PageQuery(QtWidgets.QWidget):
                                      where=Operand(deleted_col).equal_to(0))
         model = QueryTableModel(results, self)
         self.ui.trv_m.setModel(model)
+        self.ui.lne_entries_count.setText(str(model.rowCount()))
 
     def on_pbn_deleted_clicked(self):
         _, results = self.sqh.select("entries", query_columns,
@@ -247,13 +257,10 @@ class PageQuery(QtWidgets.QWidget):
             kp = self.file_kp[filepath]
         return kp
 
-    def delete_the_delete_and_transfer(self, transfer: bool = False):
-        cond = Operand(status_col).equal_to("delete")
-        if transfer is True:
-            cond = cond.or_(Operand(status_col).equal_to("transfer"), high_priority=True)
-        cond = cond.and_(Operand(deleted_col).equal_to(0))
-
-        _, results = self.sqh.select("entries", sim_columns, where=cond)
+    def delete_the_delete(self):
+        _, results = self.sqh.select("entries", sim_columns,
+                                     where=Operand(status_col).equal_to("delete")
+                                     .and_(Operand(deleted_col).equal_to(0)))
         file_uuids = get_filepath_uuids_map(results)
 
         total, success, invalid = 0, 0, 0
@@ -272,10 +279,11 @@ class PageQuery(QtWidgets.QWidget):
                     continue
 
                 kp.delete_entry(entry)
+                success += 1
+
                 self.sqh.update("entries", [(deleted_col, 1)],
                                 where=Operand(uuid_col).equal_to(u).and_(
                                     Operand(filepath_col).equal_to(blob_fy(file))))
-                success += 1
 
             kp.save()
 
@@ -309,17 +317,15 @@ class PageQuery(QtWidgets.QWidget):
                     invalid += 1
                     continue
 
-                self.tar_kp.add_entry(
-                    dest_group,
-                    entry.title or "",
-                    entry.username or "",
-                    entry.password or "",
-                    entry.url,
-                    entry.notes,
-                    otp=entry.otp,
-                    force_creation=True
-                )
+                kp.move_entry(entry, dest_group)
                 success += 1
+
+                self.sqh.update("entries", [(deleted_col, 1)],
+                                where=Operand(uuid_col).equal_to(u).and_(
+                                    Operand(filepath_col).equal_to(blob_fy(file))))
+
+            kp.save()
+
         self.tar_kp.save()
         QtWidgets.QMessageBox.information(self, "提示",
                                           f"共 {total} 条转移条目，成功 {success} 条，失败 {invalid} 条。")
@@ -336,10 +342,10 @@ class PageQuery(QtWidgets.QWidget):
         if transfer:
             self.transfer_the_transfer()
 
-        self.delete_the_delete_and_transfer(transfer)
+        self.delete_the_delete()
 
     def on_pbn_set_target_clicked(self):
-        da_target_login = DaTargetLogin(self)
+        da_target_login = DaTargetLogin(self.config, self)
         da_target_login.exec()
         self.tar_kp = da_target_login.tar_kp
 

@@ -97,6 +97,9 @@ class GbxKpsLogin(QtWidgets.QGroupBox):
             QtWidgets.QMessageBox.critical(self, "密码错误",
                                            f"{self.lne_path.text()}\n密码错误")
             return
+        except ValueError as e:
+            QtWidgets.QMessageBox.critical(self, "错误", str(e))
+            return
 
         self.file_kp[self.lne_path.text()] = kp
         self.sec_sqh.insert_into("secrets", insert_sec_columns, [

@@ -46,5 +46,8 @@ def read_kps_to_db(kps_file: str | PathLike[str], password: str,
                 blob_fy("::".join(entry.path[:-1])),
             ])
 
+    if len(values) == 0:
+        raise ValueError("Keepass 文件为空")
+
     sqh.insert_into(table_name, insert_columns, values)
     return kp

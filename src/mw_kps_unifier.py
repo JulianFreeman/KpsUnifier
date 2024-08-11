@@ -1,4 +1,6 @@
 # coding: utf8
+from pathlib import Path
+
 from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
 
@@ -131,18 +133,20 @@ class KpsUnifier(QtWidgets.QMainWindow):
         self.ui.lne_db_path.setText(filename)
 
     def on_act_new_triggered(self):
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "新建", "../",
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "新建", self.config["last_open_path"],
                                                             filter="数据库 (*.db);;所有文件 (*)")
         if len(filename) == 0:
             return
         self.update_db(filename)
+        self.config["last_open_path"] = str(Path(filename).parent)
 
     def on_act_open_triggered(self):
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "打开", "../",
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "打开", self.config["last_open_path"],
                                                             filter="数据库 (*.db);;所有文件 (*)")
         if len(filename) == 0:
             return
         self.update_db(filename)
+        self.config["last_open_path"] = str(Path(filename).parent)
 
     def on_act_load_triggered(self):
         self.ui.sw_m.setCurrentIndex(0)

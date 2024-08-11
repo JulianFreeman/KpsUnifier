@@ -49,17 +49,22 @@ def get_config_path(org_name: str, app_name: str) -> Path:
 
 
 def read_config(org_name: str, app_name: str) -> dict:
+    config = {
+        "button_min_width": 120,
+        "last_db_path": "",
+        "last_open_path": "../",
+        "loaded_memory": {}
+    }
     config_path = get_config_path(org_name, app_name)
     if not config_path.exists():
-        config = {
-            "button_min_width": 120,
-            "last_db_path": "",
-            "loaded_memory": {}
-        }
         config_path.write_text(json.dumps(config, ensure_ascii=False, indent=4), encoding="utf-8")
         return config
     else:
-        return json.loads(config_path.read_text(encoding="utf-8"))
+        exist_config = json.loads(config_path.read_text(encoding="utf-8"))
+        for key, value in config.items():
+            if key not in exist_config:
+                exist_config[key] = value
+        return exist_config
 
 
 def write_config(config: dict, org_name: str, app_name: str):

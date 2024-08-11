@@ -109,15 +109,17 @@ class PageLoad(QtWidgets.QWidget):
         self.pbn_clear_loaded_mem.clicked.connect(self.on_pbn_clear_loaded_mem_clicked)
 
     def update_sqh(self, sqh: Sqlite3Worker):
+        self.sqh = sqh
         self.wg_sa.update_sqh(sqh)
 
     def on_pbn_add_kps_clicked(self):
-        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "选择", "../",
+        filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "选择", self.config["last_open_path"],
                                                               filter="KeePass 2 数据库 (*.kdbx);;所有文件 (*)")
         if len(filenames) == 0:
             return
         for filename in filenames:
             self.wg_sa.add_kps(filename)
+        self.config["last_open_path"] = str(Path(filenames[0]).parent)
 
     def on_pbn_clear_db_clicked(self):
         if accept_warning(self, True, "警告", "你确定要清空当前数据库吗？"):
@@ -141,12 +143,16 @@ class PageLoad(QtWidgets.QWidget):
                 self.wg_sa.update_load_status(wg)
 
     def on_pbn_clear_loaded_mem_clicked(self):
-        if accept_warning(self, True, "警告", "你确定要清空所有加载记忆吗？"):
+        if accept_warning(self, True, "警告", "你确定要清空当前加载记忆吗？"):
             return
 
-        loaded_mem: dict = self.config["loaded_memory"]
-        loaded_mem.clear()
-        QtWidgets.QMessageBox.information(self, "提示", "已清空加载记忆")
+        filename = str(Path(self.sqh.db_name).name)
+        loaded_mem: list = self.config["loaded_memory"].get(filename, None)
+        if loaded_mem is None:
+            QtWidgets.QMessageBox.warning(self, "警告", f"没有找到 {filename} 的加载记忆")
+        else:
+            loaded_mem.clear()
+            QtWidgets.QMessageBox.information(self, "提示", "已清空加载记忆")
 
         # 更新kps加载状态
         for wg in self.wg_sa.kps_wgs:

@@ -1,4 +1,6 @@
 # coding: utf8
+from pathlib import Path
+
 from PySide6 import QtWidgets, QtCore, QtGui
 from pykeepass import PyKeePass
 from pykeepass.exceptions import HeaderChecksumError, CredentialsError
@@ -45,10 +47,11 @@ class UiDaTargetLogin(object):
 
 
 class DaTargetLogin(QtWidgets.QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, config: dict, parent=None):
         super().__init__(parent)
         self.ui = UiDaTargetLogin(self)
         self.tar_kp: PyKeePass | None = None
+        self.config = config
 
         self.ui.pbn_browse.clicked.connect(self.on_pbn_browse_clicked)
         self.ui.pbn_eye.clicked.connect(self.on_pbn_eye_clicked)
@@ -56,11 +59,12 @@ class DaTargetLogin(QtWidgets.QDialog):
         self.ui.pbn_cancel.clicked.connect(self.on_pbn_cancel_clicked)
 
     def on_pbn_browse_clicked(self):
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "选择", "../",
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "选择", self.config["last_open_path"],
                                                             filter="KeePass 2 数据库 (*.kdbx);;所有文件 (*)")
         if len(filename) == 0:
             return
         self.ui.lne_path.setText(filename)
+        self.config["last_open_path"] = str(Path(filename).parent)
 
     def on_pbn_eye_clicked(self):
         if self.ui.lne_password.echoMode() == QtWidgets.QLineEdit.EchoMode.Password:
